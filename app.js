@@ -6,8 +6,6 @@ const bodyParser = require("body-parser");
 const multer = require("multer");
 
 const { graphqlHTTP } = require('express-graphql')
-// const feedRoutes = require("./routes/feed");
-// const authRoutes = require("./routes/auth");
 const graphqlcSchema = require("./graphql/schema");
 const graphqlcResolver = require("./graphql/resolvers");
 
@@ -46,6 +44,9 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if(req.method == "OPTIONS") {
+        return res.sendStatus(200);
+    }
     next();
 });
 
@@ -54,6 +55,7 @@ app.use('/graphql', graphqlHTTP({
     rootValue: graphqlcResolver,
     graphiql: true,
     customFormatErrorFn(err) {
+        // console.log(err)
         if(!err.originalError) {
             return err;
         }
@@ -63,9 +65,6 @@ app.use('/graphql', graphqlHTTP({
         return { message, status: code, data}
     }
 }));
-
-// app.use("/auth", authRoutes);
-// app.use("/feed", feedRoutes);
 
 app.use((error, req, res, next) => {
     const { statusCode, message, data } = error;
