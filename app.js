@@ -52,7 +52,16 @@ app.use((req, res, next) => {
 app.use('/graphql', graphqlHTTP({
     schema: graphqlcSchema,
     rootValue: graphqlcResolver,
-    graphiql: true
+    graphiql: true,
+    customFormatErrorFn(err) {
+        if(!err.originalError) {
+            return err;
+        }
+        const data = err.originalError.data;
+        const code = err.originalError.code || 500;
+        const message = err.message || "An error ocurred.";
+        return { message, status: code, data}
+    }
 }));
 
 // app.use("/auth", authRoutes);
