@@ -35,7 +35,7 @@ module.exports = {
 
             return { ...createdUser._doc, _id: user._id.toString()}
     },
-    login: async function({ email, password }){
+    login: async function({email, password}){
         const user = await User.findOne({email});
         if(!user){
             const error = new Error("User not found!");
@@ -53,6 +53,7 @@ module.exports = {
             name: user.name,
             email: user.email
         }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        console.log(token)
         return { token, userId: user._id.toString() }
     }
 }
