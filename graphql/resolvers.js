@@ -3,6 +3,7 @@ const validator = require("validator").default;
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/user");
+const Post = require("../models/post");
 
 
 module.exports = {
@@ -55,5 +56,55 @@ module.exports = {
         }, process.env.JWT_SECRET, { expiresIn: "1h" });
         console.log(token)
         return { token, userId: user._id.toString() }
+    },
+    createPost: async function({ postInput }, req){
+        console.log(postInput);
+        if(!req.isAuth){
+            const error = new Error("Not authenticated!");
+            error.code = 401;
+            throw error;
+        }
+        const { title, content, imageUrl } = postInput;
+        const errors = [];
+        if(!validator.isLength(title, {min: 3})){
+            const error = new Error("Title is invalid.");
+            error.status = 422;
+            errors.push(error);
+        }
+        if(!validator.isLength(content, {min: 3})){
+            const error = new Error("Content is invalid..");
+            error.status = 422;
+            errors.push(error);
+        }
+        if(errors.length > 0){
+            const error = new Error("Invalid input.");
+            error.data = errors;
+            error.code = 422;
+            throw error;
+        }
+        try {
+            const user = await User.findById(req.userId);
+            if(!user){
+                const error = new Error("Invalid user.");
+                error.data = errors;
+                error.code = 401;
+                throw error;
+            }
+            console.log(user)
+            const post = new Post({title, content, imageUrl, creator: user});
+            const createdPost = await post.save();
+            user.posts.push(createdPost);
+            await user.save();
+
+            return {      
+                ...createdPost._doc,
+                _id: createdPost._id.toString(),
+                createdAt: createdPost.createdAt.toISOString(),
+                updatedAt: createdPost.updatedAt.toISOString()
+
+             }
+        } catch (error) {
+            throw error;
+        }
     }
 }
