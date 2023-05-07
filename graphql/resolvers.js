@@ -58,7 +58,6 @@ module.exports = {
         return { token, userId: user._id.toString() }
     },
     createPost: async function({ postInput }, req){
-        console.log(postInput);
         if(!req.isAuth){
             const error = new Error("Not authenticated!");
             error.code = 401;
@@ -107,20 +106,28 @@ module.exports = {
             throw error;
         }
     },
-    posts: async function(args, req){
-        console.log("rei")
+    posts: async function({ page }, req){
         if(!req.isAuth){
             const error = new Error("Not authenticated!");
             error.code = 401;
             throw error;
         }
+        if(!page) {
+            page = 1
+        };
+        const perPage = 2;
+
         try {
             const totalPosts = await Post.countDocuments();
-            const posts = await Post.find().sort({createdAt: -1}).populate('creator');
+            const posts = await Post
+                .find()
+                .sort({createdAt: -1})
+                .skip((page - 1) * perPage)
+                .limit(perPage)
+                .populate('creator');
             if(!posts){
                 return [];
             }
-            console.log({posts, totalPosts})
             return { posts: posts.map(post => {
                 return { 
                     ...post._doc,
