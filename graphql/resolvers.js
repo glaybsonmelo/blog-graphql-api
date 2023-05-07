@@ -106,5 +106,32 @@ module.exports = {
         } catch (error) {
             throw error;
         }
+    },
+    posts: async function(args, req){
+        console.log("rei")
+        if(!req.isAuth){
+            const error = new Error("Not authenticated!");
+            error.code = 401;
+            throw error;
+        }
+        try {
+            const totalPosts = await Post.countDocuments();
+            const posts = await Post.find().sort({createdAt: -1}).populate('creator');
+            if(!posts){
+                return [];
+            }
+            console.log({posts, totalPosts})
+            return { posts: posts.map(post => {
+                return { 
+                    ...post._doc,
+                      _id: post._id.toString(), 
+                      createdAt: post.createdAt.toISOString(), 
+                      updatedAt: post.updatedAt.toISOString()
+                    }
+            }), totalPosts };
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
     }
 }
