@@ -166,7 +166,15 @@ module.exports = {
         }
     },
     updatePost: async function({id, postInput}, req) {
+        
+        if(!req.isAuth){
+            const error = new Error("Not authenticated!");
+            error.code = 401;
+            throw error;
+        }
+        
         const { title, content, imageUrl } = postInput;
+
         try {
             const post = await Post.findById(id).populate("creator");
             if(!post) {
@@ -174,18 +182,47 @@ module.exports = {
                 error.status = 404;
                 throw error;
             }
-            if(post.creator._id.toString() !== req.userId){
-                const error = new Error("No authorized.");
-                error.status = 401;
+            if(post.creator._id.toString() !== req.userId.toString()){
+                const error = new Error("Not authorized!");
+                error.status = 403;
                 throw error;
             }
+
+            const errors = [];
+
+            if(!validator.isLength(title, {min: 3})){
+                const error = new Error("Title is invalid.");
+                error.status = 422;
+                errors.push(error);
+            }
+            if(!validator.isLength(content, {min: 3})){
+                const error = new Error("Content is invalid..");
+                error.status = 422;
+                errors.push(error);
+            }
+            if(errors.length > 0){
+                const error = new Error("Invalid input.");
+                error.data = errors;
+                error.code = 422;
+                throw error;
+            }
+
             post.title = title;
             post.content = content,
-            post.imageUrl = imageUrl
+            post.updatedAt = new Date;
+            if(imageUrl !== 'undefined'){
+                post.imageUrl = imageUrl;
+            }
+
             const updatedPost = await post.save();
 
             console.log(updatedPost)
-            return { ...updatedPost._doc };
+            return { 
+                ...updatedPost._doc,
+                _id: updatedPost._id.toString(), 
+                createdAt: updatedPost.createdAt.toISOString(), 
+                updatedAt: updatedPost.updatedAt.toISOString()
+             };
 
         } catch (error) {
             console.log(error)
