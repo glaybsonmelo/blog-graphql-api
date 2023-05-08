@@ -54,7 +54,6 @@ module.exports = {
             name: user.name,
             email: user.email
         }, process.env.JWT_SECRET, { expiresIn: "1h" });
-        console.log(token)
         return { token, userId: user._id.toString() }
     },
     createPost: async function({ postInput }, req){
@@ -89,7 +88,6 @@ module.exports = {
                 error.code = 401;
                 throw error;
             }
-            console.log(user)
             const post = new Post({title, content, imageUrl, creator: user});
             const createdPost = await post.save();
             user.posts.push(createdPost);
@@ -139,6 +137,58 @@ module.exports = {
         } catch (error) {
             console.log(error);
             throw error;
+        }
+    },
+    post: async function({id}, req) {
+        if(!req.isAuth){
+            const error = new Error("Not authenticated!");
+            error.code = 401;
+            throw error;
+        }
+        try {
+            const post = await Post.findById(id).populate("creator");
+            // console.log(post)
+            if(!post) {
+                const error = new Error("No post found.");
+                error.status = 404;
+                throw error;
+            }
+            return { 
+                ...post._doc, 
+                _id: post._id.toString(), 
+                createdAt: post.createdAt.toISOString(), 
+                updatedAt: post.updatedAt.toISOString()
+            };
+            
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
+    },
+    updatePost: async function({id, postInput}, req) {
+        const { title, content, imageUrl } = postInput;
+        try {
+            const post = await Post.findById(id).populate("creator");
+            if(!post) {
+                const error = new Error("No post found.");
+                error.status = 404;
+                throw error;
+            }
+            if(post.creator._id.toString() !== req.userId){
+                const error = new Error("No authorized.");
+                error.status = 401;
+                throw error;
+            }
+            post.title = title;
+            post.content = content,
+            post.imageUrl = imageUrl
+            const updatedPost = await post.save();
+
+            console.log(updatedPost)
+            return { ...updatedPost._doc };
+
+        } catch (error) {
+            console.log(error)
         }
     }
 }
