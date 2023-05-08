@@ -10,6 +10,7 @@ const { graphqlHTTP } = require('express-graphql')
 const graphqlcSchema = require("./graphql/schema");
 const graphqlcResolver = require("./graphql/resolvers");
 const auth = require("./middlewares/auth");
+const { clearImage } = require("./utils/file")
 
 require("dotenv").config();
 
@@ -51,13 +52,6 @@ app.use((req, res, next) => {
     }
     next();
 });
-
-const clearImage = filePath => {
-    filePath = path.join(__dirname, '..', filePath);
-    fs.unlink(filePath, err => {
-        console.log(err);
-    });
-}
 
 app.use(auth);
 
