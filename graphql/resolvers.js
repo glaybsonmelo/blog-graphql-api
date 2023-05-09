@@ -235,7 +235,7 @@ module.exports = {
             throw error;
         }
         try {
-            const post = await Post.findById(id);
+            const post = await Post.findById(id.toString());
             if(!post) {
                 const error = new Error("No post found.");
                 error.status = 404;
@@ -250,13 +250,53 @@ module.exports = {
             clearImage(post.imageUrl);
 
             await Post.findByIdAndRemove(id);
-            const user = await user.findById(req.userId);
+            const user = await User.findById(req.userId);
             user.posts.pull(id)
             await user.save()
             return true 
         } catch (error) {
             console.log(error);
             return false
+        }
+    },
+    user: async function(_, req) {
+        if(!req.isAuth){
+            const error = new Error("Not authenticated!");
+            error.code = 401;
+            throw error;
+        }
+        try {
+            const user = await User.findById(req.userId);
+            if(!user) {
+                const error = new Error("No user found.");
+                error.status = 404;
+                throw error;
+            }
+            return { ...user._doc, _id: user.id.toString() };
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
+    },
+    updateStatus: async function( { status }, req ) {
+        if(!req.isAuth){
+            const error = new Error("Not authenticated!");
+            error.code = 401;
+            throw error;
+        }
+        try {
+            const user = await User.findById(req.userId);
+            if(!user) {
+                const error = new Error("No user found.");
+                error.status = 404;
+                throw error;
+            }
+            user.status = status;
+            await user.save();
+            return { ...user._doc, _id: user.id.toString() };
+        } catch (error) {
+            console.log(error);
+            throw error;
         }
     }
 }
